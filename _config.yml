@@ -1,6 +1,6 @@
 # SITE CONFIGURATION
 baseurl: "" # the subpath of your site, e.g. /blog/ (optional)
-url: "http://davelively14.github.io" 
+url: "http://www.resurgens.io" 
 
 # THEME-SPECIFIC CONFIGURATION
 theme_settings:
