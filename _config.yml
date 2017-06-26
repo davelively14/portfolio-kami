@@ -1,6 +1,6 @@
 # SITE CONFIGURATION
 baseurl: "" # the subpath of your site, e.g. /blog/ (optional)
-url: "http://www.resurgens.io" 
+url: "http://www.resurgens.io"
 
 # THEME-SPECIFIC CONFIGURATION
 theme_settings:
@@ -10,8 +10,8 @@ theme_settings:
 
   # Header and footer text
   header_text: >
-     <h1>@RealFullStackDeveloper</h1>
-     <p>I'm the original developer specializing in Elixir, Rails, AngularJS, and MongoDB.</p>
+     <h1>full stack dev</h1>
+     <p>I'm the original developer specializing in Elixir, Rails, React, and AngularJS.</p>
   header_text_feature_image:
   footer_text: >
    Powered by <a href="http://jekyllrb.com">Jekyll</a> and made with love.
