@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Capstone - Phoenix 1.3.0-rc"
+title: "Capstone - Phoenix 1.3, pt 1"
 ---
 ## Background
 
@@ -78,7 +78,7 @@ We're left with a clean, easy to reference directory tree.
 
 ## Clients and the JSON API
 
-<!-- TODO: stopped here -->
+The `Clients` system gives us a better look at we used `Context` modules to manage access to the system. Note that I chose to slightly break from Phoenix 1.3 generator convention by storing all Ecto schemas within the `/clients/schema` directory. While there is no need to do this, I found it easier to read as I added complexity to my systems.
 
 <pre>
 |-- clients
@@ -90,8 +90,12 @@ We're left with a clean, easy to reference directory tree.
 |   |-- support
 |   |   |-- auth.ex
 |   |		
-|   |-- clients.ex
+|   |-- <a href="https://github.com/davelively14/flatfoot/blob/master/lib/flatfoot/clients/clients.ex" target="_blank"><b>clients.ex</b></a> <-- click to view file in new tab
 </pre>
+
+Unlike previous versions of Phoenix, accessing the underlying schema and modules should only be accomplished by calling functions within `clients.ex` - sorry, no more `Repo` calls from a controller. Within the context you'll find common, CRUD-like functions like `Clients.delete_user(user)` or `Clients.get_user!(123)`. But you can quickly create more useful functions like `Clients.get_user_by_token(token)`, which returns a `User` when provided a valid session token. The `clients.ex` context acts as the gatekeeper for the system boundary and it's the only place you should expose the system to the rest of the app.
+
+In order to allow the user access to the majority of the JSON API, the user must request and receive encrypted session tokens, either by creating a new user or logging in to an existing account. That functionality,
 
 <pre>
 |-- <b>web</b>
