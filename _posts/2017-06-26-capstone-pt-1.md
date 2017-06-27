@@ -93,9 +93,9 @@ The `Clients` system gives us a better look at we used `Context` modules to mana
 |   |-- <a href="https://github.com/davelively14/flatfoot/blob/master/lib/flatfoot/clients/clients.ex" target="_blank"><b>clients.ex</b></a> <-- click to view file in new tab
 </pre>
 
-Unlike previous versions of Phoenix, accessing the underlying schema and modules should only be accomplished by calling functions within `clients.ex` - sorry, no more `Repo` calls from a controller. Within the context you'll find common, CRUD-like functions like `Clients.delete_user(user)` or `Clients.get_user!(123)`. But you can quickly create more useful functions like `Clients.get_user_by_token(token)`, which returns a `User` when provided a valid session token. The `clients.ex` context acts as the gatekeeper for the system boundary and it's the only place you should expose the system to the rest of the app.
+Unlike previous versions of Phoenix, accessing the underlying schema and modules should only be accomplished by calling functions within `clients.ex` - sorry, no more `Repo` calls from a controller. Within the context you'll find common, CRUD-like functions like `Clients.delete_user(user)` or `Clients.get_user!(123)`. But you can quickly create more useful functions like `Clients.get_user_by_token(token)`, which returns a `User` when provided a valid session token. The `clients.ex` context acts as the gatekeeper for the system boundary and it's the only place you should expose the underlying system to the rest of the app.
 
-In order to allow the user access to the majority of the JSON API, the user must request and receive encrypted session tokens, either by creating a new user or logging in to an existing account. That functionality,
+<!-- TODO: Discuss the web structure as it relates to to the JSON API, show an example where the controller calls a function from clients.ex -->
 
 <pre>
 |-- <b>web</b>
