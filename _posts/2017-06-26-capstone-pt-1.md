@@ -28,18 +28,18 @@ Since this is an app I’m building in order to further my education, I opted to
 
 While the Phoenix teams does emphasize that these changes are suggestions for how to organize your code, for the purposes of this project I chose to treat it as gospel. For me, these are the three big takeaways from this new version:
 
-1. While Phoenix has only ever been the web layer for your Elixir app, the new directory structure makes that abundantly clear. Everything Phoenix related is all neatly packed away within the `lib/my_app` directory, including the `web` directory.
-2. Models are gone. Instead, developers create systems with a `Context`, which is simply a module that acts as a boundary for the underlying system. Different systems will often use their own schemas to reference a common table in the database, but only retrieve and update the columns for which they’re responsible. More on this later, as its utility becomes more apparent in an example.
+1. While Phoenix has only ever been the web layer for your Elixir app, the new directory structure makes that abundantly clear and better defines its role. Everything relating to collecting and serving Phoenix web endpoints (JSON, HTML, websockets, etc.) is neatly packed away within the `lib/my_app` directory, including the `/web` directory.
+2. On a similar note, models are gone. Where the web interface was once build around the models, developers now instead create separate interfaces for various aspects of their apps. These context modules exist within their own directories, acting as a boundary for the underlying system of schemas and modules. Your endpoints, located in the `/web` directory, will access these context modules to gather data to serve to users. More on this later.
 3. Assets no longer clog up the root directory. All of your external assets are stored in the `/assets` directory. Since I was using Webpack for this project, this was a particular pain for me initially, but ultimately it makes the project significantly easier to navigate. If you’re interested, [here’s how I setup and configured](https://github.com/davelively14/configs/blob/master/phoenix_1.3_react_redux.md) my Phoenix 1.3 app to work with Webpack 2, React, Redux, and React Router.
 
-At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. I struggled early with the new structure, but ultimately these guidelines led to better app development, with clear divisions of responsibility and more reliable code.
+At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. I struggled early with the new structure, but ultimately these guidelines lead to better app development, with clear divisions of responsibility, and more reliable code.
 
 ## The stuff dreams are made of
 
-A quick note on the nomenclature I chose. In keeping with the mythical bird theme that is Phoenix, I named my systems after characters from the classic 1941 film, [The Maltese Falcon](https://en.wikipedia.org/wiki/The_Maltese_Falcon_(1941_film)). The relevant part of the premise is rather simple: The **Client** approaches Sam **Spade** with an interesting case. Spade takes the case and dispatches his partner, Miles **Archer**, to gather information on the quarry, but ultimately it's up to Spade to solve the mystery. Fortunately, we made a few improvements on the movie, so if/when Archer dies, he’ll be seamlessly revived and put back into action thanks to Elixir’s awesome reliability.
+A quick note on the nomenclature I chose. In keeping with the Phoenix mythical bird theme, I named my systems after characters from the classic 1941 film, [The Maltese Falcon](https://en.wikipedia.org/wiki/The_Maltese_Falcon_(1941_film)). The relevant part of the premise is rather simple: A prospective **Client** approaches Sam **Spade** with an interesting case. Spade takes the case and dispatches his partner, Miles **Archer**, to gather information on the quarry, but ultimately it's up to Spade to solve the mystery. Fortunately, we made a few improvements on the movie, so if/when Archer dies, he’ll be seamlessly revived and put back into action thanks to Elixir’s awesome reliability.
 
-![Figure 1](/img/capstone/overview.png)
-<small>**Figure 1.** *`Clients` and `Spade` systems expose their API to user requests via Phoenix web endpoints. Both systems are contained within the `web` directory and are accessible to the user via JSON and Channel endpoints, respectively. `SpadeInspector` and `Archer` are Phoenix 1.3 styled systems that are accessible by the via their `Context` of the same name.*</small>
+![Figure 1](/img/capstone/web_system.png)
+<small>**Figure 1.** *`Clients` and `Spade` systems expose their interface to the `Web` system. The `Clients` controllers requests data via the `Flatfoot.Clients` context module (not the `Repo`) before serving via JSON endpoint. Similarly, users may use `SpadeChannel` to request data through the `Flatfoot.Spade` context module. `Spade` `SpadeInspector` and `Archer` .*</small>
 
 In this app’s basic form, the `Clients` system handles all requests relating to the management of users and their preferences, such as creating a profile, editing that profile, and authorizing access via session tokens. The `Spade` system is where the significant action happens. Via websocket connection, users may request retrieval of persisted results or request new results. When those new results are requested, `Spade` will utilize`SpadeInspector` to manage deployment of `Archer` to fetch, parse and return results. Upon receipt of new results, `SpadeInspector` will evaluate those results, store them, and asynchronously return them to the user.
 
@@ -74,11 +74,16 @@ flatfoot
 
 If you’re used to running a third party bundler like [webpack](https://webpack.github.io/) with Phoenix 1.2 and earlier, you’re also likely to notice how uncluttered the root directory is. `package.json`, `webpack.config.js`, and the `node_module` directory are now all packed away quite neatly within the `/assets` directory.
 
-We're left with a clean, easy to reference directory tree.
+We're left with a clean, easy to reference directory tree, and clearly defined systems.
 
-## Clients and the JSON API
+## Contexts as API Boundaries
 
-The `Clients` system gives us a better look at we used `Context` modules to manage access to the system. Note that I chose to slightly break from Phoenix 1.3 generator convention by storing all Ecto schemas within the `/clients/schema` directory. While there is no need to do this, I found it easier to read as I added complexity to my systems.
+As Mikel Myskala has [pointed out](http://michal.muskala.eu/2017/05/16/putting-contexts-in-context.html), the biggest mind shift here is understanding that we're exposing functionality that
+
+![Figure 2](/img/capstone/boundaries.png)
+<small>**Figure 2.** *Systems should only be accessed through the functions of their context modules: `Flatfoot.Clients`, `Flatfoot.Spade`, `Flatfoot.SpadeInspector`, and `Flatfoot.Archer`.*</small>
+
+The `Clients` system gives us a better look at we used context modules to manage access across the system boundry. Note that I chose to slightly break from Phoenix 1.3 generator convention by storing all Ecto schemas within the `/clients/schema` directory. While there is no need to do this, I found it easier to read as I added complexity to my systems.
 
 <pre>
 |-- clients
@@ -90,47 +95,10 @@ The `Clients` system gives us a better look at we used `Context` modules to mana
 |   |-- support
 |   |   |-- auth.ex
 |   |		
-|   |-- <a href="https://github.com/davelively14/flatfoot/blob/master/lib/flatfoot/clients/clients.ex" target="_blank"><b>clients.ex</b></a> <-- click to view file in new tab
+|   |-- <a href="https://github.com/davelively14/flatfoot/blob/master/lib/flatfoot/clients/clients.ex" target="_blank"><b>clients.ex</b></a> <-- click to view in new tab
 </pre>
 
-Unlike previous versions of Phoenix, accessing the underlying schema and modules should only be accomplished by calling functions within `clients.ex` - sorry, no more `Repo` calls from a controller. Within the context you'll find common, CRUD-like functions like `Clients.delete_user(user)` or `Clients.get_user!(123)`. But you can quickly create more useful functions like `Clients.get_user_by_token(token)`, which returns a `User` when provided a valid session token. The `clients.ex` context acts as the gatekeeper for the system boundary and it's the only place you should expose the underlying system to the rest of the app.
-
-<!-- TODO: Discuss the web structure as it relates to to the JSON API, show an example where the controller calls a function from clients.ex -->
-
-<pre>
-|-- <b>web</b>
-|   |-- channels
-|   |-- <b>controllers</b>
-|   |   |-- <b>clients</b>
-|   |   |   |-- blackout_option_controller.ex
-|   |   |   |-- notification_record_controller.ex
-|   |   |   |-- session_controller.ex
-|   |   |   |-- user_controller.ex
-|   |   |
-|   |   |-- fallback_controller.ex
-|   |   |-- page_controller.ex
-|   |
-|   |-- static
-|   |-- templates
-|   |-- <b>views</b>
-|   |   |-- <b>clients</b>
-|   |   |   |-- blackout_option_view.ex
-|   |   |   |-- notification_record_view.ex
-|   |   |   |-- session_view.ex
-|   |   |   |-- user_view.ex
-|   |   |
-|   |   |-- spade
-|   |   |-- changeset_view.ex
-|   |   |-- error_helpers.ex
-|   |   |-- error_view.ex
-|   |   |-- layout_view.ex
-|   |   |-- page_view.ex
-|   |
-|   |-- endpoint.ex
-|   |-- gettext.ex
-|   |-- router.ex
-|   |-- web.ex
-</pre>
+Unlike previous versions of Phoenix, accessing the underlying schema and modules should only be accomplished by calling functions within the `Flatfoot.Clients` module contained within `clients.ex` - sorry, no more `Repo` calls from a controller. Within the context you'll find common, CRUD-like functions like `Clients.delete_user(user)` or `Clients.get_user!(123)`. But you can quickly create more dynamic and useful functions like `Clients.get_user_by_token(token)`, which returns a `User` when provided a valid session token. The `Flatfoot.Clients` context acts as the gatekeeper for the system boundary and it's the only place you should expose the underlying system to the rest of the app.
 
 ## Visualizing the Data Flow for a Request
 
