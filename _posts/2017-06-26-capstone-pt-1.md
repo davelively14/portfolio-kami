@@ -2,6 +2,8 @@
 layout: post
 title: "Capstone - Phoenix 1.3, pt 1"
 ---
+# Flatfoot
+
 ## Background
 
 There were several reasons why I chose [Bloc](https://www.bloc.io/) over other bootcamps, but one of the more attractive aspects was that I was able to go at my own pace. I ran at an accelerated clip through the early lessons with which I was already familiar. That left me significantly more time to dedicate towards my capstone project for the Web Development portion of my [Software Development track](https://www.bloc.io/software-developer-track).
@@ -43,7 +45,7 @@ A quick note on the nomenclature I chose. In keeping with the Phoenix mythical b
 
 In this app’s basic form, the `Clients` system handles all requests relating to the management of users and their preferences, such as creating a profile, editing that profile, and authorizing access via session tokens. The `Spade` system is where the significant action happens. Via websocket connection, users may request retrieval of persisted results or request new results. When those new results are requested, `Spade` will utilize`SpadeInspector` to manage deployment of `Archer` to fetch, parse and return results. Upon receipt of new results, `SpadeInspector` will evaluate those results, store them, and asynchronously return them to the user.
 
-## Organizing in Phoenix 1.3
+### Organizing in Phoenix 1.3
 
 We can see a basic outline of the architecture quite clearly in the new directory structure. Each system has it's own directory within the `/lib/flatfoot` directory. Also worth noting, the `/web` directory - once a clinger to the root directory in early versions of Phoenix - now finds a more appropriate home.
 
