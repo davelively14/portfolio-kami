@@ -14,15 +14,9 @@ In order to limit the scope of what promised to be a significant undertaking for
 
 ## The Stack
 
-When it came to picking the tech stack for this project, my mentor, [Ryan Milstead](https://www.linkedin.com/in/ryanmilstead/), recommended that I select technologies that I wanted to work with instead of being constrained by what we had already used. There wasn’t anything particularly wrong with Rails, JQuery, or AngularJS, but with an open sandbox and my pick of tools, I selected my favorites: [Eilxir](https://elixir-lang.org/) on the backend, with [Phoenix](http://www.phoenixframework.org/) providing the web interface layer, and [React](https://facebook.github.io/react/) with [Redux](http://redux.js.org/) for the frontend demo.
+For the tech stack, my mentor, [Ryan Milstead](https://www.linkedin.com/in/ryanmilstead/), recommended that I select technologies that I wanted to work with instead of being constrained by what we had already used. There wasn’t anything particularly wrong with Rails, JQuery, or AngularJS, but with an open sandbox and my pick of tools, I selected my favorites: [Eilxir](https://elixir-lang.org/) on the backend, with [Phoenix](http://www.phoenixframework.org/) providing the web interface layer, and [React](https://facebook.github.io/react/) with [Redux](http://redux.js.org/) for the frontend demo. While Python or any number of other languages might have been more performant in terms of parsing and analyzing the collected data, few can compete with Elixir’s out of the box scalability, fault tolerance, and maintainability.
 
-### Elixir and Phoenix
-
-Full disclosure: Elixir - a functional language built on top of Erlang and compiles into BEAM - is my favorite language, so I’m a little biased. While Python or any number of other languages might have been more performant in terms of parsing and analyzing the collected data, few can compete with Elixir’s out of the box scalability, fault tolerance, and maintainability.
-
-In order to develop a wider variety of skills in this academic setting, I chose to use two different Phoenix endpoints for my user interaction layer. First, a JSON API for handling all things related to the user profile, settings, and authentication. Second, I would use a [famously](http://www.phoenixframework.org/blog/the-road-to-2-million-websocket-connections) efficient Phoenix Channel to manage websocket connections that exposes social media monitoring functionality to the user.
-
-In order to collect the data, I would utilize Elixir’s built in Erlang OTP abstractions to supervise the fetching, parsing, and serving results from Twitter.
+In order to develop a wider variety of skills in this academic setting, I chose to expose two different Phoenix endpoints as my user interaction layer. The first is a JSON API for handling all things related to the user profile, settings, and authentication. For the other, I would use the [famously](http://www.phoenixframework.org/blog/the-road-to-2-million-websocket-connections) efficient Phoenix Channel to manage websocket connections that exposes the social media monitoring functionality of the app to the user. In regards to data collection from external API's and analysis, I chose to utilize Elixir's built in Erlang OTP abstraction.
 
 ### Living on the Edge
 
@@ -31,59 +25,44 @@ Since this is an app I’m building in order to further my education, I opted to
 While the Phoenix teams does emphasize that these changes are suggestions for how to organize your code, for the purposes of this project I chose to treat it as gospel. For me, these are the three big takeaways from this new version:
 
 1. While Phoenix has only ever been the web layer for your Elixir app, the new directory structure makes that abundantly clear and better defines its role. Everything relating to collecting and serving Phoenix web endpoints (JSON, HTML, websockets, etc.) is neatly packed away within the `lib/my_app` directory, including the `/web` directory.
-2. On a similar note, models are gone. Where the web interface was once build around the models, developers now instead create separate interfaces for various aspects of their apps. These context modules exist within their own directories, acting as a boundary for the underlying system of schemas and modules. Your endpoints, located in the `/web` directory, will access these context modules to gather data to serve to users. More on this later.
+2. On a similar note, models are gone. Whereas Phoenix's web interface was once built around models within the `/web` directory, we now extract that data fetching, along with implementation and support modules, to their own, self-contained systems. The functionality within those systems is exposed via a context module that acts as a boundary and shares the name of the system (i.e. `clients.ex` is the context module for the `Clients` system and is located in the `lib/my_app/clients` directory). Instead of making `Repo` calls or writing complex code from within the web interface, your endpoints will access these context modules to gather data to serve to users. If that's a bit confusing, just hang on - it'll make mores sense as we get into the app.
 3. Assets no longer clog up the root directory. All of your external assets are stored in the `/assets` directory. Since I was using Webpack for this project, this was a particular pain for me initially, but ultimately it makes the project significantly easier to navigate. If you’re interested, [here’s how I setup and configured](https://github.com/davelively14/configs/blob/master/phoenix_1.3_react_redux.md) my Phoenix 1.3 app to work with Webpack 2, React, Redux, and React Router.
 
 At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. I struggled early with the new structure, but ultimately these guidelines lead to better app development, with clear divisions of responsibility, and more reliable code.
 
 ## The stuff dreams are made of
 
-A quick note on the nomenclature I chose. In keeping with the Phoenix mythical bird theme, I named my systems after characters from the classic 1941 film, [The Maltese Falcon](https://en.wikipedia.org/wiki/The_Maltese_Falcon_(1941_film)). The relevant part of the premise is rather simple: A prospective **Client** approaches Sam **Spade** with an interesting case. Spade takes the case and dispatches his partner, Miles **Archer**, to gather information on the quarry, but ultimately it's up to Spade to solve the mystery. Fortunately, we made a few improvements on the movie, so if/when Archer dies, he’ll be seamlessly revived and put back into action thanks to Elixir’s awesome reliability.
-
-![Figure 1](/img/capstone/web_system.png)
-<small>**Figure 1.** *`Clients` and `Spade` systems expose their interface to the `Web` system. The `Clients` controllers requests data via the `Flatfoot.Clients` context module (not the `Repo`) before serving via JSON endpoint. Similarly, users may use `SpadeChannel` to request data through the `Flatfoot.Spade` context module. `Spade` `SpadeInspector` and `Archer` .*</small>
-
-In this app’s basic form, the `Clients` system handles all requests relating to the management of users and their preferences, such as creating a profile, editing that profile, and authorizing access via session tokens. The `Spade` system is where the significant action happens. Via websocket connection, users may request retrieval of persisted results or request new results. When those new results are requested, `Spade` will utilize`SpadeInspector` to manage deployment of `Archer` to fetch, parse and return results. Upon receipt of new results, `SpadeInspector` will evaluate those results, store them, and asynchronously return them to the user.
+A quick note on the nomenclature I chose. In keeping with the Phoenix mythical bird theme, I named my systems after characters from the classic 1941 film, [The Maltese Falcon](https://en.wikipedia.org/wiki/The_Maltese_Falcon_(1941_film)). The relevant part of the premise is rather simple: A prospective **Client** approaches Sam **Spade** with an interesting case. Spade takes the case and dispatches his partner, Miles **Archer**, to gather information on the quarry and report back, but ultimately it's up to Spade to solve the mystery. Fortunately, we made a few improvements on the movie, so if Archer just happens dies, he’ll be seamlessly revived and put back into action thanks to the magic of OTP.
 
 ### Organizing in Phoenix 1.3
 
 We can see a basic outline of the architecture quite clearly in the new directory structure. Each system has it's own directory within the `/lib/flatfoot` directory. Also worth noting, the `/web` directory - once a clinger to the root directory in early versions of Phoenix - now finds a more appropriate home.
 
-<pre>
-flatfoot
-|-- assets
-|-- config
-|-- <b>lib/flatfoot</b>
-|   |-- <b>archer</b>
-|   |-- <b>clients</b>
-|   |-- data
-|   |-- shared
-|   |-- <b>spade</b>
-|   |-- <b>spade_inspector</b>
-|   |-- <b>web</b>
-|   |-- application.ex
-|   |-- repo.ex
-|
-|-- priv
-|-- test
-|-- .eslintrc.js
-|-- .gitignore
-|-- .travis.yml
-|-- README.md
-|-- mix.exs
-|-- mix.lock
-</pre>
+![Figure 1](/img/capstone/dir_tree_overview.png)
+<small>**Figure 1.** *Flatfoot directory tree in Phoenix 1.3.0-rc*</small>
 
 If you’re used to running a third party bundler like [webpack](https://webpack.github.io/) with Phoenix 1.2 and earlier, you’re also likely to notice how uncluttered the root directory is. `package.json`, `webpack.config.js`, and the `node_module` directory are now all packed away quite neatly within the `/assets` directory.
 
 We're left with a clean, easy to reference directory tree, and clearly defined systems.
 
+### System design
+
+![Figure 2](/img/capstone/web_system.png)
+<small>**Figure 2.** *Flatfoot overview.*</small>
+
+In this app's most basic form, all user interaction is handled by the `Web` system. It's responsible for handling requests from the user, requesting and persisting data from other systems, and returning information to the user. The `Clients` and `Spade` systems expose their interface to the `Web` system via their context modules. The `Clients` system handles all requests relating to the management of users and their preferences, such as creating a profile, editing that profile, and authorizing access via session tokens. The `Spade` system is where the significant action begins.
+
+![Figure 3](/img/capstone/data_flow.png)
+<small>**Figure 3.** *Data flow.*</small>
+
+Via the `SpadeChannel` websocket connection, users may request retrieval of persisted results or request new results. Figure 2 depicts what happens when a user requests new results. `SpadeChannel` will access the `SpadeInspector` context to initiate deployment and monitoring of `Archer` and its implementation modules to fetch, parse and return results. Upon receipt of new results, the `server.ex` within the `SpadeInspector` system will evaluate those results, store them, and asynchronously return them to the user.
+
 ## Contexts as API Boundaries
 
-As Mikel Myskala has [pointed out](http://michal.muskala.eu/2017/05/16/putting-contexts-in-context.html), the biggest mind shift here is understanding that we're exposing functionality that
+As Mikel Myskala has [pointed out](http://michal.muskala.eu/2017/05/16/putting-contexts-in-context.html), the biggest mind shift here is understanding that we're only minimally coupling our data to our application. One of the more challenging aspects was developing optimal boundaries for my application - and I'm still not entirely sure I did.
 
-![Figure 2](/img/capstone/boundaries.png)
-<small>**Figure 2.** *Systems should only be accessed through the functions of their context modules: `Flatfoot.Clients`, `Flatfoot.Spade`, `Flatfoot.SpadeInspector`, and `Flatfoot.Archer`.*</small>
+![Figure 4](/img/capstone/boundaries.png)
+<small>**Figure 4.** *Flatfoot's boundaries*</small>
 
 The `Clients` system gives us a better look at we used context modules to manage access across the system boundry. Note that I chose to slightly break from Phoenix 1.3 generator convention by storing all Ecto schemas within the `/clients/schema` directory. While there is no need to do this, I found it easier to read as I added complexity to my systems.
 
