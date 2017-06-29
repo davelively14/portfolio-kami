@@ -6,101 +6,80 @@ title: "Capstone - Phoenix 1.3, pt 1"
 
 ## Background
 
-There were several reasons why I chose [Bloc](https://www.bloc.io/) over other bootcamps, but one of the more attractive aspects was that I was able to go at my own pace. I ran at an accelerated clip through the early lessons with which I was already familiar. That left me significantly more time to dedicate towards my capstone project for the Web Development portion of my [Software Development track](https://www.bloc.io/software-developer-track).
+There were several reasons why I chose [Bloc](https://www.bloc.io/) over other bootcamps, but one of the more attractive aspects was that I was able to go at my own pace. I ran at an accelerated clip through the early lessons with which I was already familiar. That left me significantly more time to dedicate towards my capstone project for the Web Development portion of the [Software Development track](https://www.bloc.io/software-developer-track).
 
 The idea for my capstone came from my wife. After one of those senseless, online bullying induced suicides, my wife suggested that I develop an app where parents could monitor their loved one’s social media public feeds for any signs of bullying or outward displays of suicide ideation.
 
-In order to limit the scope of what promised to be a significant undertaking for a lone developer, I chose to narrow the focus to a single social media site initially. Given its robust API and general ease of use, I chose [Twitter](https://dev.twitter.com/). Additionally, I chose to forego implementing a mailer or push notification system and instead focus initially on an on-demand tracking system. Architecturally, however, I designed the app so that we can easily add additional social media sites and a mailer system as time and resources permit.
+In order to limit the scope of what promised to be a significant undertaking for a lone developer, I chose to collect on a single social media site initially. Given its robust API and general ease of use, I chose [Twitter](https://dev.twitter.com/). Additionally, I opted to initially forego implementing a mailer or push notification system and instead focus on building an on-demand tracking system. Architecturally, however, I designed the app so that functionality could be included in future versions.
 
 ## The Stack
 
 For the tech stack, my mentor, [Ryan Milstead](https://www.linkedin.com/in/ryanmilstead/), recommended that I select technologies that I wanted to work with instead of being constrained by what we had already used. There wasn’t anything particularly wrong with Rails, JQuery, or AngularJS, but with an open sandbox and my pick of tools, I selected my favorites: [Eilxir](https://elixir-lang.org/) on the backend, with [Phoenix](http://www.phoenixframework.org/) providing the web interface layer, and [React](https://facebook.github.io/react/) with [Redux](http://redux.js.org/) for the frontend demo. While Python or any number of other languages might have been more performant in terms of parsing and analyzing the collected data, few can compete with Elixir’s out of the box scalability, fault tolerance, and maintainability.
 
-In order to develop a wider variety of skills in this academic setting, I chose to expose two different Phoenix endpoints as my user interaction layer. The first is a JSON API for handling all things related to the user profile, settings, and authentication. For the other, I would use the [famously](http://www.phoenixframework.org/blog/the-road-to-2-million-websocket-connections) efficient Phoenix Channel to manage websocket connections that exposes the social media monitoring functionality of the app to the user. In regards to data collection from external API's and analysis, I chose to utilize Elixir's built in Erlang OTP abstraction.
+In order to develop a wider variety of skills in this academic setting, I chose to expose two different Phoenix endpoints as my user interaction layer. The first is a JSON API for handling all things related to the user profile, settings, and authentication. For the other, I would use a [famously](http://www.phoenixframework.org/blog/the-road-to-2-million-websocket-connections) efficient Phoenix Channel to manage websocket connections to expose the social media monitoring functionality of the app to the user. In regards to data collection from external API's and analysis, I chose to utilize Elixir's built in Erlang OTP abstraction.
 
 ### Living on the Edge
 
-Since this is an app I’m building in order to further my education, I opted to venture out on the bleeding edge and use Phoenix 1.3.0-rc. Don’t let the what seems like a minor version change fool you. While there are no real breaking changes or significant new features being introduced in 1.3, changes in the directory structure and code generators introduce a seismic shift in how a developer approaches a Phoenix project. [Chris McCord](http://www.chrismccord.com/) provides an overview and insight into these changes in the [Lonestar Elixir keynote address](https://www.youtube.com/watch?v=tMO28ar0lW8), his [Elixir Forum post](https://elixirforum.com/t/phoenix-v1-3-0-rc-0-released/3947), and his more recent [ElixirConf EU keynote](https://www.youtube.com/watch?v=pfFpIjFOL-I). Those were all essential to getting started, but I found it more easy to understand the advantages once I began implementing it in a project.
+Since this is an app I built in order to further my education, I opted to venture out on the bleeding edge and use Phoenix 1.3.0-rc. Don’t let the what seems like a minor version change fool you. While there are no real breaking changes or significant new features being introduced in 1.3, alterations to the directory structure and new code generators introduce a seismic shift in how a developer approaches a Phoenix project. [Chris McCord](http://www.chrismccord.com/) provides an overview of these changes in the [Lonestar Elixir keynote address](https://www.youtube.com/watch?v=tMO28ar0lW8), his [Elixir Forum post](https://elixirforum.com/t/phoenix-v1-3-0-rc-0-released/3947), and his more recent [ElixirConf EU keynote](https://www.youtube.com/watch?v=pfFpIjFOL-I). Those were all essential for me to getting started, but I found the concepts easier to grasp once I began implementing them in my project.
 
-While the Phoenix teams does emphasize that these changes are suggestions for how to organize your code, for the purposes of this project I chose to treat it as gospel. For me, these are the three big takeaways from this new version:
+While the Phoenix teams does emphasize that these changes are suggestions for how to organize and approach your project, for the purposes of my app I chose to implement it (mostly) as suggested. For me, these are the three big takeaways from this new version:
 
-1. While Phoenix has only ever been the web layer for your Elixir app, the new directory structure makes that abundantly clear and better defines its role. Everything relating to collecting and serving Phoenix web endpoints (JSON, HTML, websockets, etc.) is neatly packed away within the `lib/my_app` directory, including the `/web` directory.
-2. On a similar note, models are gone. Whereas Phoenix's web interface was once built around models within the `/web` directory, we now extract that data fetching, along with implementation and support modules, to their own, self-contained systems. The functionality within those systems is exposed via a context module that acts as a boundary and shares the name of the system (i.e. `clients.ex` is the context module for the `Clients` system and is located in the `lib/my_app/clients` directory). Instead of making `Repo` calls or writing complex code from within the web interface, your endpoints will access these context modules to gather data to serve to users. If that's a bit confusing, just hang on - it'll make mores sense as we get into the app.
+1. While Phoenix has only ever been the web layer for your Elixir app, the new directory structure makes that abundantly clear and better defines its role. Everything relating to collecting and serving Phoenix web endpoints is neatly packed away within the `lib/my_app/web` directory.
+
+2. On a similar note, models are gone. Whereas Phoenix's web interface was once built around models within the `/web` directory, we now extract that data fetching and manipulation (along with implementation and support modules) to their own, self-contained systems. The functionality within those systems is exposed via a context module that acts as a boundary and shares the name of the system (i.e. `clients.ex` is the context module for the `Clients` system and is located in the `lib/my_app/clients` directory). Instead of making `Repo` calls or writing complex code in your controllers or channels, those endpoints will use the context modules to gather and manipulate data. If that's a bit confusing, just hang on - it'll make mores sense as we get into the app.
+
 3. Assets no longer clog up the root directory. All of your external assets are stored in the `/assets` directory. Since I was using Webpack for this project, this was a particular pain for me initially, but ultimately it makes the project significantly easier to navigate. If you’re interested, [here’s how I setup and configured](https://github.com/davelively14/configs/blob/master/phoenix_1.3_react_redux.md) my Phoenix 1.3 app to work with Webpack 2, React, Redux, and React Router.
 
-At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. I struggled early with the new structure, but ultimately these guidelines lead to better app development, with clear divisions of responsibility, and more reliable code.
+At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. I struggled early with the new structure, but ultimately these guidelines lead to more purposeful app development, with clear divisions of responsibility, and more reliable code.
 
 ## The stuff dreams are made of
 
-A quick note on the nomenclature I chose. In keeping with the Phoenix mythical bird theme, I named my systems after characters from the classic 1941 film, [The Maltese Falcon](https://en.wikipedia.org/wiki/The_Maltese_Falcon_(1941_film)). The relevant part of the premise is rather simple: A prospective **Client** approaches Sam **Spade** with an interesting case. Spade takes the case and dispatches his partner, Miles **Archer**, to gather information on the quarry and report back, but ultimately it's up to Spade to solve the mystery. Fortunately, we made a few improvements on the movie, so if Archer just happens dies, he’ll be seamlessly revived and put back into action thanks to the magic of OTP.
+![Maltese Falcon, 1941](http://www.filminamerica.com/Movies/TheMalteseFalcon/falcon06.jpg)
+
+A quick note on the nomenclature I chose. In keeping with the Phoenix mythical bird theme, I named my systems after characters from the classic 1941 film, [The Maltese Falcon](https://en.wikipedia.org/wiki/The_Maltese_Falcon_(1941_film)). The relevant part of the premise is rather simple: A prospective **Client** approaches Sam **Spade** with an interesting case. Spade takes the case and dispatches his partner, Miles **Archer**, to gather information on the case and report back, but ultimately it's up to Spade to solve the mystery. Fortunately, we made a few improvements on the movie, so if Archer just happens to die, he’ll be seamlessly revived and put back into action thanks to the magic of OTP.
+
+I settled on the name Flatfoot for the app. I realize that's more a beat cop than a private investigator like Spade, but the prevailing slang for a PI at the time doesn't seem appropriate in a modern context.
 
 ### Organizing in Phoenix 1.3
 
-We can see a basic outline of the architecture quite clearly in the new directory structure. Each system has it's own directory within the `/lib/flatfoot` directory. Also worth noting, the `/web` directory - once a clinger to the root directory in early versions of Phoenix - now finds a more appropriate home.
+We can see a basic outline of the architecture quite clearly in the new directory structure. Each system has it's own directory within the `/lib/flatfoot` directory. Also worth noting, the `/web` directory - once a clinger to the root in early versions of Phoenix - now finds a more appropriate home.
 
 ![Figure 1](/img/capstone/dir_tree_overview.png)
 <small>**Figure 1.** *Flatfoot directory tree in Phoenix 1.3.0-rc*</small>
 
 If you’re used to running a third party bundler like [webpack](https://webpack.github.io/) with Phoenix 1.2 and earlier, you’re also likely to notice how uncluttered the root directory is. `package.json`, `webpack.config.js`, and the `node_module` directory are now all packed away quite neatly within the `/assets` directory.
 
-We're left with a clean, easy to reference directory tree, and clearly defined systems.
+We're left with a clean, easy to reference directory tree, with clearly defined systems.
 
 ### System design
 
 ![Figure 2](/img/capstone/web_system.png)
-<small>**Figure 2.** *Flatfoot overview.*</small>
+<small>**Figure 2.** *Flatfoot systems overview.*</small>
 
-In this app's most basic form, all user interaction is handled by the `Web` system. It's responsible for handling requests from the user, requesting and persisting data from other systems, and returning information to the user. The `Clients` and `Spade` systems expose their interface to the `Web` system via their context modules. The `Clients` system handles all requests relating to the management of users and their preferences, such as creating a profile, editing that profile, and authorizing access via session tokens. The `Spade` system is where the significant action begins.
+In this app's most basic form, all user interaction is managed by the `Web` system. It's responsible for handling requests from the user, requesting and persisting data via interaction with the other systems, and returning gathered data to the user. The `Clients` and `Spade` systems expose their interface to the `Web` system via their context modules. The `Clients` system handles all requests relating to the management of users and their preferences, such as creating a profile, editing that profile, and authorizing access via session tokens. The `Spade` system is where the significant action begins.
 
 ![Figure 3](/img/capstone/data_flow.png)
-<small>**Figure 3.** *Data flow.*</small>
+<small>**Figure 3.** *Data flow when requesting new results.*</small>
 
-Via the `SpadeChannel` websocket connection, users may request retrieval of persisted results or request new results. Figure 2 depicts what happens when a user requests new results. `SpadeChannel` will access the `SpadeInspector` context to initiate deployment and monitoring of `Archer` and its implementation modules to fetch, parse and return results. Upon receipt of new results, the `server.ex` within the `SpadeInspector` system will evaluate those results, store them, and asynchronously return them to the user.
+Via websocket transport monitored by `SpadeChannel`, users may request retrieval or deletion of persisted results or request new results altogether. Figure 2 depicts what happens when a user requests new results.
+- `SpadeChannel` will make a call to the `SpadeInspector` context, which in turn sends a request to `SpadeInspector.Server`.
+- The `Server` builds `configs` for each social media account being monitored and sends those `configs` to the `Archer` context, which in turn sends those configs to the `Archer.Server`.
+- That `Server` then calls on `Archer.FidoSupervisor` - a `TaskSupervisor`, to initialize and monitor the backends (in this case just `Archer.Backends.Twitter`).
+- Each backend will send results back to `SpadeInspector.Server`, per the passed `pid`.
+- Upon receipt of new results, `SpadeInspector.Server` system will evaluate those results, store them, and asynchronously return them to the user.
 
 ## Contexts as API Boundaries
 
-As Mikel Myskala has [pointed out](http://michal.muskala.eu/2017/05/16/putting-contexts-in-context.html), the biggest mind shift here is understanding that we're only minimally coupling our data to our application. One of the more challenging aspects was developing optimal boundaries for my application - and I'm still not entirely sure I did.
+As Mikel Myskala has [pointed out](http://michal.muskala.eu/2017/05/16/putting-contexts-in-context.html), the biggest mind shift here is understanding that we're only minimally coupling our data to our application. One of the more challenging aspects was developing optimal boundaries for my application - and I'm still pretty sure I could further improve things.
 
 ![Figure 4](/img/capstone/boundaries.png)
 <small>**Figure 4.** *Flatfoot's boundaries*</small>
 
-The `Clients` system gives us a better look at we used context modules to manage access across the system boundry. Note that I chose to slightly break from Phoenix 1.3 generator convention by storing all Ecto schemas within the `/clients/schema` directory. While there is no need to do this, I found it easier to read as I added complexity to my systems.
+Unlike previous versions of Phoenix, accessing the underlying schema and modules should only be accomplished by calling functions within the context module - sorry, no more `Repo` calls from a controller. Within these contexts you'll find common, CRUD-like functions like `Clients.delete_user(user)` or `Clients.get_user!(123)`. But you can quickly create more dynamic and useful functions like `Clients.get_user_by_token(token)`, which returns a `User` when provided a valid session token. The `Flatfoot.Clients` context acts as the gatekeeper for the system boundary and it's the only place you should expose the underlying system to the rest of the app.
 
-<pre>
-|-- clients
-|   |-- schema
-|   |   |-- blackout_option.ex
-|   |   |-- notification_record.ex
-|   |   |-- session.ex
-|   |   |-- user.ex
-|   |-- support
-|   |   |-- auth.ex
-|   |		
-|   |-- <a href="https://github.com/davelively14/flatfoot/blob/master/lib/flatfoot/clients/clients.ex" target="_blank"><b>clients.ex</b></a> <-- click to view in new tab
-</pre>
+## Internal directory structures
 
-Unlike previous versions of Phoenix, accessing the underlying schema and modules should only be accomplished by calling functions within the `Flatfoot.Clients` module contained within `clients.ex` - sorry, no more `Repo` calls from a controller. Within the context you'll find common, CRUD-like functions like `Clients.delete_user(user)` or `Clients.get_user!(123)`. But you can quickly create more dynamic and useful functions like `Clients.get_user_by_token(token)`, which returns a `User` when provided a valid session token. The `Flatfoot.Clients` context acts as the gatekeeper for the system boundary and it's the only place you should expose the underlying system to the rest of the app.
-
-## Visualizing the Data Flow for a Request
-
-![Figure 3](/img/capstone/data_flow.png)
-<small>**Figure 3.** *Data flow overview*</small>
-
-While much of the interaction between the user and backend will be via JSON and websocket to interact with existing data, the purpose of the app is to get information from social media sites, which is what we focus on for this section.
-
-Figure 2 is pretty busy, so we’ll break down this flow of data step by step.
-
-Step 1. An authenticated user will push a request to the SpadeChannel websocket via a `fetch_new_ward_results` message with a `{“id”: ward_id}` payload. `Wards` are individuals the user wishes to keep tabs on. Each `Ward` will have none, one, or many `WardAccounts`, which are individual accounts for various networks (i.e. handles on Twitter, usernames for Facebook).
-
-
-
-Step 2. Upon authentication and parameter check, `SpadeChannel` will send send a request to the `SpadeInspector.Server` via the `SpadeInspector.Server.fetch_update(ward_id)` function call. The server starts on app launch, so it’s already running. The server will handle the call internally and retrieve the correct `Ward`. For each `WardAccount` of that `Ward`, the server will build an `mfa` map with instructions for processing and then assign all of the `mfa` maps to a list named `configs`.
-
-
-
-Step 3. `SpadeInspector.Server` sends the list of `mfa` maps to the `Archer` system via the `Archer.Server.fetch_data(configs)` function call.
-
-### Something
+# Stopped here
 
 Each system has it’s own directory, with a matching named `Context` file. For my app, I broke slightly with the out of the box Phoenix 1.3.0-rc directory convention. In order to avoid cluttering each system’s root directory with schema, I nested all of the schemas within the `/schema` directory:
 
@@ -116,7 +95,7 @@ Each system has it’s own directory, with a matching named `Context` file. For 
     |   |-- ward_result.ex
     |   |-- watchlist.ex
     |
-    |-- spade.ex
+    |-- <a href="https://github.com/davelively14/flatfoot/blob/master/lib/flatfoot/spade/spade.ex">spade.ex</a>
 </pre>
 
 It’s important to note that these systems can be more than just a single `Context` file and schema. Any Elixir modules affecting the system can - and most likely should - be included within the boundary. In my `Archer` context (see directory tree below), I included an `archer/otp` directory to house my `ArcherSupervisor`, `Archer.Server`, and `/backends`, which contains my task modules.
