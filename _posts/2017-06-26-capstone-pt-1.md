@@ -5,7 +5,7 @@ title: "My Capstone - Phoenix 1.3.0-rc"
 # Flatfoot
 
 ![](https://github.com/favicon.ico) &nbsp;&nbsp;[View on GitHub](https://github.com/davelively14/flatfoot) <br>
-<!-- <img src="https://image.flaticon.com/icons/png/128/12/12195.png" width="32"> &nbsp;&nbsp;[View Demo](https://boiling-beach-47326.herokuapp.com) -->
+<img src="https://image.flaticon.com/icons/png/128/12/12195.png" width="32"> &nbsp;&nbsp;[View Demo](https://obscure-reef-78695.herokuapp.com/)
 
 ## Background
 
