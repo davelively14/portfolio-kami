@@ -9,9 +9,9 @@ title: "My Capstone - Phoenix 1.3.0-rc"
 
 ## Background
 
-There were several reasons why I chose [Bloc](https://www.bloc.io/) over other bootcamps, but one of the more attractive aspects was that I was able to go at my own pace. I ran at an accelerated clip through the early lessons with which I was already familiar. That left me significantly more time to dedicate towards my capstone project for the Web Development portion of the [Software Development track](https://www.bloc.io/software-developer-track).
+There were several reasons why I chose [Bloc](https://www.bloc.io/) over other bootcamps, but one of the more attractive aspects was that I was able to go at my own pace. I ran at an accelerated clip through the early lessons with which I was already familiar, leaving me with significantly more time to dedicate towards the Web Development capstone project of the [Software Development track](https://www.bloc.io/software-developer-track).
 
-The idea for my capstone came from my wife. After one of those senseless, online bullying induced suicides, my wife suggested that I develop an app where parents could monitor their loved one’s social media public feeds for any signs of bullying or outward displays of suicide ideation.
+The idea for my capstone came from my [wife](http://www.neboagency.com/blog/author/slively/). After one of those senseless, online bullying induced suicides, my wife though of an app where parents could monitor their loved one’s social media public feeds for any signs of bullying or outward displays of suicide ideation.
 
 In order to limit the scope of what promised to be a significant undertaking for a lone developer, I chose to collect on a single social media site initially. Given its robust API and general ease of use, I chose [Twitter](https://dev.twitter.com/). Additionally, I opted to initially forego implementing a mailer or push notification system and instead focus on building an on-demand tracking system. Architecturally, however, I designed the app so that functionality could be included in future versions.
 
@@ -23,20 +23,21 @@ In order to develop a wider variety of skills in this academic setting, I chose 
 
 ### Living on the Edge
 
-Since this is an app I built in order to further my education, I opted to venture out on the bleeding edge and use Phoenix 1.3.0-rc. Don’t let the what seems like a minor version change fool you. While there are no real breaking changes or significant new features being introduced in 1.3, alterations to the directory structure and new code generators introduce a seismic shift in how a developer approaches a Phoenix project. [Chris McCord](http://www.chrismccord.com/) provides an overview of these changes in the [Lonestar Elixir keynote address](https://www.youtube.com/watch?v=tMO28ar0lW8), his [Elixir Forum post](https://elixirforum.com/t/phoenix-v1-3-0-rc-0-released/3947), and his more recent [ElixirConf EU keynote](https://www.youtube.com/watch?v=pfFpIjFOL-I). Those were all essential for me to getting started, but I found the concepts easier to grasp once I began implementing them in my project.
+<img align="left" src="https://pbs.twimg.com/profile_images/540333799557439489/-s9uoLIN.png" width="250">
+Since this is an app I built in order to further my education, I opted to venture out on the bleeding edge and use Phoenix 1.3.0-rc. Don’t let the what seems like a minor version change fool you. While there are no real breaking changes or significant new features being introduced in 1.3, alterations to the directory structure and new code generators introduce a seismic shift in how a developer approaches a Phoenix project. [Chris McCord](http://www.chrismccord.com/) provides an overview of these changes in the [Lonestar Elixir keynote address](https://www.youtube.com/watch?v=tMO28ar0lW8), his [Elixir Forum post](https://elixirforum.com/t/phoenix-v1-3-0-rc-0-released/3947), and his more recent [ElixirConf EU keynote](https://www.youtube.com/watch?v=pfFpIjFOL-I). Those were all essential for me to getting started, but I found the concepts easier to grasp once I began building my project.
 
 While the Phoenix team does emphasize that these changes are suggestions for how to organize and approach your project, for the purposes of my app I chose to implement it (mostly) as suggested. For me, these are the three big takeaways from this new version:
 
 #### Web Location
-- While Phoenix has only ever been the web layer for your Elixir app, the new directory structure makes that abundantly clear and better defines its role. Everything relating to collecting and serving Phoenix web endpoints is neatly packed away within the `lib/my_app/web` directory.
+- While Phoenix has only ever been the web framework for your Elixir app, the new directory structure makes that abundantly clear and better defines its role. Everything relating to collecting and serving Phoenix web endpoints is neatly packed away within the `lib/my_app/web` directory.
 
 #### Contexts
-- On a similar note, models are gone. Whereas Phoenix's web interface was once built around models within the `/web` directory, we now extract that data fetching and manipulation (along with implementation and support modules) to their own, self-contained systems. The functionality within those systems is exposed via a context module that acts as a boundary and shares the name of the system (i.e. `clients.ex` is the context module for the `Clients` system and is located in the `lib/my_app/clients` directory). Instead of making `Repo` calls or writing complex code in your controllers or channels, those endpoints will use the context modules to gather and manipulate data. If that's a bit confusing, just hang on - it'll make mores sense as we get into the app.
+- On a similar note, models are gone. Whereas Phoenix's web interface was once built around models within the `/web` directory, we now extract that data fetching and manipulation (along with their implementation and support modules) to their own, self-contained systems. The functionality within those systems is exposed via a **context module** that acts as a boundary and shares the name of the system (i.e. `clients.ex` is the context module for the `Clients` system and is located in the `lib/my_app/clients` directory). Instead of making `Repo` calls or writing complex code in your controllers or channels, those endpoints will use the context modules to interact with data. If that's a bit confusing, just hang on - it'll make mores sense as we get into the app.
 
 #### Assets Location
 - Assets no longer clog up the root directory. All of your external assets are stored in the `/assets` directory. Since I was using Webpack for this project, this was a particular pain for me initially, but ultimately it makes the project significantly easier to navigate. If you’re interested, [here’s how I setup and configured](https://github.com/davelively14/configs/blob/master/phoenix_1.3_react_redux.md) my Phoenix 1.3 app to work with Webpack 2, React, Redux, and React Router.
 
-At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. I struggled early with the new structure, but ultimately these guidelines lead to more purposeful app development, with clear divisions of responsibility, and more reliable code.
+At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. Early on, I struggled a bit with the new structure, but ultimately these guidelines lead to more purposeful app development, with clear divisions of responsibility, and more reliable code.
 
 ## The stuff dreams are made of
 
@@ -238,6 +239,6 @@ Note that we return a `Clients.User` structure instead of the `Shared.User` that
 
 ## Conclusion
 
-Phoenix 1.3 is a significant departure, not only from earlier iterations of framework, but also from the MVC architectures that have dominated backend web development. One can't help but feel that Phoenix is coming into it's own, escaping the dominating shadow of the popular frameworks before it and offering something new, something more in line with modern concepts. Phoenix 1.3 feels closer to an Elixir umbrella app or collection of microservices than it does an MVC app like Rails.
+Phoenix 1.3 is a significant departure, not only from earlier iterations of framework, but also from the MVC architectures that have dominated web frameworks. One can't help but feel that Phoenix is coming into it's own, escaping the dominating shadow of the popular frameworks before it, and offering something new, something more in line with modern web design. Phoenix 1.3 feels more like a natural extension of an Elixir umbrella app or collection of microservices than it does a monolithic MVC app like Rails.
 
 It takes some getting used to, but the future is bright.
