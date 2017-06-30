@@ -4,6 +4,9 @@ title: "My Capstone - Phoenix 1.3.0-rc"
 ---
 # Flatfoot
 
+![](https://github.com/favicon.ico) &nbsp;&nbsp;[View on GitHub](https://github.com/davelively14/flatfoot) <br>
+<!-- <img src="https://image.flaticon.com/icons/png/128/12/12195.png" width="32"> &nbsp;&nbsp;[View Demo](https://boiling-beach-47326.herokuapp.com) -->
+
 ## Background
 
 There were several reasons why I chose [Bloc](https://www.bloc.io/) over other bootcamps, but one of the more attractive aspects was that I was able to go at my own pace. I ran at an accelerated clip through the early lessons with which I was already familiar. That left me significantly more time to dedicate towards my capstone project for the Web Development portion of the [Software Development track](https://www.bloc.io/software-developer-track).
