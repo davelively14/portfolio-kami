@@ -25,9 +25,11 @@ Since this is an app I built in order to further my education, I opted to ventur
 While the Phoenix team does emphasize that these changes are suggestions for how to organize and approach your project, for the purposes of my app I chose to implement it (mostly) as suggested. For me, these are the three big takeaways from this new version:
 
 1. While Phoenix has only ever been the web layer for your Elixir app, the new directory structure makes that abundantly clear and better defines its role. Everything relating to collecting and serving Phoenix web endpoints is neatly packed away within the `lib/my_app/web` directory.
-
+</br>
+</br>
 2. On a similar note, models are gone. Whereas Phoenix's web interface was once built around models within the `/web` directory, we now extract that data fetching and manipulation (along with implementation and support modules) to their own, self-contained systems. The functionality within those systems is exposed via a context module that acts as a boundary and shares the name of the system (i.e. `clients.ex` is the context module for the `Clients` system and is located in the `lib/my_app/clients` directory). Instead of making `Repo` calls or writing complex code in your controllers or channels, those endpoints will use the context modules to gather and manipulate data. If that's a bit confusing, just hang on - it'll make mores sense as we get into the app.
-
+</br>
+</br>
 3. Assets no longer clog up the root directory. All of your external assets are stored in the `/assets` directory. Since I was using Webpack for this project, this was a particular pain for me initially, but ultimately it makes the project significantly easier to navigate. If you’re interested, [here’s how I setup and configured](https://github.com/davelively14/configs/blob/master/phoenix_1.3_react_redux.md) my Phoenix 1.3 app to work with Webpack 2, React, Redux, and React Router.
 
 At its core, Phoenix 1.3 provides a forcing mechanism to design with intent. You have to think about what you’re going to do before you do it. I struggled early with the new structure, but ultimately these guidelines lead to more purposeful app development, with clear divisions of responsibility, and more reliable code.
