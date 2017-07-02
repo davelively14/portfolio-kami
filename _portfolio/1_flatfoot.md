@@ -30,7 +30,7 @@ For my technology stack, I chose [PostgreSQL](https://www.postgresql.org/) for m
 
 ### Overview
 
-_Flatfoot_ operates as a single-page application (SPA) that interacts with the backend via a JSON API for user authentication and profile management, and websocket for all things related to monitoring social media accounts.
+_Flatfoot_ operates as a single-page application (SPA) that interacts with the backend via a JSON API for user authentication and profile management, and websocket for all things related to monitoring social media accounts. The basic flow is that a user will create an account and navigate the dashboard. From there, users create a `ward`, which represents a person the user wishes to track. For each `ward`, the user creates `ward_accounts` that represent a social media account for a given backend. The user can then instruct the app to check for new results. Asynchronously, the app will return those results, each with a rating from 0 to 100, where the higher the rating the more potential that the post contains an example of bullying or an ideation.
 
 #### Nomenclature
 
@@ -41,69 +41,185 @@ In keeping with the Phoenix mythical bird theme, I named my systems after charac
 I settled on the name 'Flatfoot' for the app. I realize that's more a beat cop than a private investigator like Spade, but the prevailing slang for a PI at the time doesn't seem appropriate in a modern context.
 
 #### Database Layer
+
+Since this is an app I built in order to further my education, I used a release candidate version of my web framework, Phoenix 1.3.0-rc. I write in more detail about it in a [blog post](http://www.resurgens.io/2017/06/26/phoenix-1-3.html), but the big takeaway here is that models are gone and systems are in. As such, the tables in our database look a little different.
+
 <img align="right" src="/img/flatfoot-2.png">
-We can use the database schema to provide an overview for how _Flatfoot_ works. A `User` creates an account, setting their name, username, and a password via a bcrypt hash. That user is then able to create a `Project` and then add any number of listings as an individual `Search`, which would all belong to the `Project`. Every time the user uses the app to run a search, a `ResultCollection` is created. Each `Backend` then asynchronously generates any number of `Result` entries, which are then returned to the user.
 
-#### Adding a series of listings
-<img align="left" src="/img/locorum-2.png" width="300">
-SEO specialists at Nebo will download their client's information as a CSV from [Google My Business](https://support.google.com/business/answer/3478406?hl=en), which they use as a basis to conduct searches. Once a user creates a project, they are presented with the option to either `Create New Search`, which displays a modal with an HTML form for manual creation, or `Upload CSV`. If the user opts for CSV, they can upload a Google My Business CSV and automatically generate any number of searches that will be associated with the current `Project`. We use an Elixir controller, `csv_controller.ex`, to parse the CSV file, persist the results to the database, and associate it with the current `Project`.
+Instead of a table named `backends`, for instance, we have `archer_backends`. While that indicates that the table is managed by the `Archer` system, other systems can - and do - interact with the tables via their own, system specific schemas.
 
-#### Retrieving local listings
+#### React routing
 
-Once searches are added, the user may then navigate to the results page, which is a [Phoenix Channel](http://www.phoenixframework.org/docs/channels). While we could have solved this particular problem without using a websocket, Nebo's final problem listed above was to present these results with the ability to collaborate. Future versions will include more collaborative features, such as live chat and real time comments.
+As a SPA, we only handle routes virtually. In this case, we use the famous [`react-router`](https://github.com/ReactTraining/react-router/tree/master/packages/react-router). In order to ensure our Phoenix server plays well with `react-router`, we had to route any unexpected requests to the root. At the end of the `web\router.ex` file, we placed the following code:
 
-<img align="right" src="/img/locorum-4.png" width="450">
-When a user conducts a search, Elixir's concurrency advantages and efficient supervision trees quickly becomes evident. We spin up a supervisor that manages `BackendSys`, a module that will asynchronously starts every backend module. Each module will either use an API from one of the backends to pull and parse JSON data, or scrape and parse HTML. Once each backend module parses the results, they send them back to the channel, where the clients are listening via JavaScript and render the results in the overview pane for each search.
+```elixir
+scope "/*path", Flatfoot.Web do
+  pipe_through :browser # Use the default browser stack
 
-#### Displaying each result
-
-<img align="left" src="/img/locorum-5.png" width="300">
-Nebo had specific requirements for displaying results. First, they wanted an accuracy rating for each search. In order to achieve this, we created a function in the `Locorum.BackendSys.Helpers` module (see below). We use the built in Jaro distance function to compare each element of the result (business name, address, city, state, zip, and phone) to the listing provided by the user and return the lowest score. We make a few exceptions in order to capture the importance of the zip and phone. If the zip code is incorrect, the maximum score is a 20. If the phone is incorrect, the maximum score is a 50.
-
-{% highlight elixir %}
-def rate_results(results, query) do
-  address = single_address(query.address1, query.address2)
-
-  for result <- results do
-    rating =
-      %{biz: rate_same(result.biz, query.biz), address: rate_same(result.address, address),
-        city: rate_same(result.city, query.city), state: rate_same(result.state, query.state),
-        phone: rate_same(phonify(result.phone), phonify(query.phone))}
-      |> return_lowest
-
-    rating =
-      cond do
-        rating < 0.2 ->
-          rating
-        result.zip && (result.zip != query.zip) ->
-          0.2
-        rating < 0.5 ->
-          rating
-        result.phone && (phonify(result.phone) != phonify(query.phone)) ->
-          0.5
-        true ->
-          rating
-      end
-
-    Map.put(result, :rating, round(rating * 100))
-  end
+  get "/", PageController, :index
 end
-{% endhighlight %}
+```
 
-The other requirement for displaying results is to provide a link to result on the local listing site. During fetch and parsing, each backend will provide a link (`View at Source`) to the page where the SEO specialist can request improvements.
+It's important that block is at the end of our router file, otherwise every request will route to the root. With that in place, we can setup our routes in `lib/flatfoot/web/static/js/react.js`:
 
-#### Maintain previous results
+```javascript
+render(
+  <Provider store={store}>
+    <Router history={history}>
+      <Route path="/" component={App}>
+        <IndexRoute component={Landing} />
+        <Route path="login" component={Login} />
+        <Route path="new-user" component={NewUser} />
+        <Route path="profile" component={Profile} />
+        <Route path="logout" component={Logout} />
+        <Route path="dashboard" component={SpadeChannel} />
+      </Route>
+    </Router>
+  </Provider>,
+  document.getElementById('react')
+);
+```
 
-<img align="right" src="/img/locorum-6.png" width="300">
-An additional feature requested by the team at Nebo was to maintain a collection of previous results in order to track improvements and rankings. All previous results are available. This is a good time to explain how we leveraged Elixir's built in [OTP](http://learningelixir.joekain.com/designing-with-otp-applications-in-elixir/) as middleware to speed up requests for data. Whenever a project channel is created, we start a [GenServer](https://hexdocs.pm/elixir/GenServer.html) that pulls all the data for all the searches from the underlying database for a given project.
+The first four route paths (`login`, `new-user`, `profile`, `logout`) all deal with the JSON API. The final route, `dashboard`, interacts with our Phoenix Channel via websocket, and that's where all the magic happens. But before we can create magic, we'll need to gain authorization.
 
-In order to maintain continuity between data on the GenServer and the database, only the GenServer can write to the database. All new search results are sent to the server, which then persists them on the database. When the user requests older search results, the server is able to return the most up to date results nearly instantaneously. While the time savings may be negligible here, this will allow us to scale quite readily, as read requests to the database are few and far between.
+#### User management via JSON
 
-### The Frontend
+All aspects of managing the user profile - creation, editing, preference setting, session management - is handled via Phoenix JSON API. All substantial functionality of the app is only available to authenticated users, via a url safe [base-64 token](https://github.com/patricksrobertson/secure_random.ex) for JSON requests, or a [Phoenix token](https://hexdocs.pm/phoenix/Phoenix.Token.html) for access to the dashboard channel. In order to get the first token, a user must create a profile.
 
-[`react-router`](https://github.com/ReactTraining/react-router/tree/master/packages/react-router) to manage
+![Figure 1](/img/flatfoot-3.png)
+<small>**Figure 1.** *Data flow for creating a new user*</small>
 
+In the example above, a user will make a `new_user` API call, which will be handled by `Web` system's `Router` and routed to the `UserController` module. The `create` function of that module will use the `Clients` context module to create a new user, receive the new user, and then make a subsequent call to `Clients` to login, which creates a base-64 token and returns it within a `%Session{}` structure. The `UserController.create` function then returns a rendering of the session via `Web.SessionView`. The result the user receives looks like this:
+
+  ```json
+  {
+      "data": {
+          "token": "eWE0aEx2eVpGTTBYeHlqWnV1VnZSUT09"
+      }
+  }
+  ```
+
+Our frontend stores that token in the Redux store in `session.token` and uses that in all subsequent calls to our JSON API as part of the headers:
+
+```json
+Authorization: Token token="eWE0aEx2eVpGTTBYeHlqWnV1VnZSUT09"
+```
+
+To read further about the JSON API functionality, take a look at the [docs here](https://github.com/davelively14/flatfoot/blob/master/JSON_api.md).
+
+Upon receipt of a new token, our frontend will set it within the Redux managed store. Additionally, we use `universal-cookie` to store the token in a cookie. Here's what it looks like in `lib/flatfoot/web/static/js/components/clients/login.js`:
+
+```javascript
+import Cookies from 'universal-cookie';
+import { fetchUser, fetchPhoenixToken } from './helpers/api';
+...
+function(text) {
+  let token = JSON.parse(text).data.token;
+  const cookies = new Cookies();
+  cookies.set('token', token, {
+    path: '/'
+  });
+
+  setToken(token);
+  fetchUser(setUser, token);
+  fetchPhoenixToken(setPhoenixToken, token);
+  browserHistory.push('/dashboard');
+}
+```
+
+We retrieve from cookies when the app is launched, via `lib/flatfoot/web/static/js/components/app.js`:
+
+```javascript
+import Cookies from 'universal-cookie';
+import { fetchUser, fetchPhoenixToken } from './helpers/api';
+...
+const mapStateToProps = function(state) {
+  return {
+    loggedIn: state.session.token ? true : false
+  };
+};
+...
+componentWillMount() {
+  const cookies = new Cookies();
+
+  if (!this.props.loggedIn && cookies.get('token')) {
+    let token = cookies.get('token');
+
+    this.props.setToken(token);
+    fetchUser(this.props.setUser, token);
+    fetchPhoenixToken(this.props.setPhoenixToken, token);
+  }
+}
+```
+
+Note how in both files above, we call the `fetchPhoenixToken()` function from our `./helpers/api.js` file, which is required to connected to websocket. More details about how that works can be found in the [Getting Started](https://github.com/davelively14/flatfoot#getting-started) section of the README.
+
+#### SpadeChannel
+
+Our Phoenix Channel, `SpadeChannel`, is the gateway for where all the magic happens. Our React app joins the channel via `lib/flatfoot/web/static/js/components/spade/spade_channel.js`, which is at the end of the `dashboard` route as handled by `react-router`. While the many components of our React app will push requests to the channel, it is within `spade_channel.js` that we listen for all the results.
+
+This will be easier to understand with an example.
+
+![Figure 2](/img/flatfoot-4.png)
+<small>**Figure 2.** *Data flow when requesting new results.*</small>
+
+Our `WardDetail` component contains a function that is called when the user clicks a button:
+```javascript
+fetchNewResults() {
+  this.props.channel.push('fetch_new_ward_results', {ward_id: this.props.ward.id});
+}
+```
+
+When our Phoenix `SpadeChannel` receives the message, it works with the rest of our Elixir app (more on that in the next section) to fetch new results. As those results are received, the send those results to the Phoenix `SpadeChannel`, which then broadcasts to the channel our React app is connected to.
+
+When initially joining, `spade_channel.js` set several event listeners. One of them is set to handle the `new_ward_results`:
+
+```javascript
+channel.on('new_ward_results', (_resp) => {
+  this.props.clearWardResults();
+  channel.push('get_ward_results_for_user', {
+    token: this.props.session.token
+  });
+});
+```
+
+A complete guide to working with the channel can be found in the [docs here](https://github.com/davelively14/flatfoot/blob/master/spade_channel.md).
+
+#### Elixir OTP
+
+While React and Phoenix play well together up front, the heavy lifting is done by Elixir.
+
+![Figure 3](/img/flatfoot-5.png)
+<small>**Figure 3.** *How Flatfoot gathers data*</small>
+
+We'll pick up at step 2, where our channel calls a function from the `SpadeInspector` context module to pass on notification of the request. The SpadeInspector system contains an Elixir OTP system (based on [Erlang OTP](http://learnyousomeerlang.com/what-is-otp)) consisting of a `Supervisor` and a `SpadeInspector.Server` - a [GenServer](https://hexdocs.pm/elixir/GenServer.html). In this step, `SpadeInspector.Server` receives a request to fetch results for a ward and builds a configuration for each:
+
+```elixir
+def handle_cast({:fetch_update, ward_id}, state) do
+  configs = if ward = Flatfoot.Spade.get_ward_preload(ward_id) do
+    ward.ward_accounts |> Enum.map(fn ward_account ->
+      last_msg_id = ward_account.last_msg || ""
+
+      %{mfa: {
+          ward_account.backend.module |> String.to_atom,
+          :fetch,
+          [self(), %{user_id: ward.user_id, ward_account_id: ward_account.id, backend_id: ward_account.backend.id}, ward_account.handle, last_msg_id]
+        }
+      }
+    end)
+  end
+
+  if configs, do: Archer.fetch_data(configs)
+  {:noreply, state}
+end
+```
+
+Step 3 begins on the next to last line: `Archer.fetch_data(configs)`. Archer is similar SpadeInspector in that it has an OTP system with a supervisor that supervises a server, but that supervisor also supervises a [Task.Supervisor](https://hexdocs.pm/elixir/Task.Supervisor.html) named `FidoSupervisor`. `Archer.Server` will tell `FidoSupervisor` to launch each backend according to the provided config (step 4). `FidoSupervisor` will then launch and supervise each backend concurrently (step 5). When each backend retrieves a result (in this case, we only have `Twitter` running), it will parse and send those results back to `SpadeInspector.Server` for processing (step 6).
+
+Upon receiving a result, `SpadeInspector.Server` will add each result, assign a rating, and then broadcast those results to `SpadeChannel` (step 7). `SpadeChannel` will then broadcast those result to our connected frontend (step 8.)
+
+A quick note on scoring. `SpadeInspector.Server` pulls ratings from several csv files containing flagged words and stores them locally via Erlang Term Storage, or [ets tables][http://erlang.org/doc/man/ets.html]. Those `:ets` tables allow for very quick access to a library of over 4,000 negative words that we use to score the rating for the results. You can read more about the speed of ETS' use of Judy Arrays in [this paper](http://erlang.org/workshop/2003/paper/p43-fritchie.pdf).
 
 ## Conclusion
 
-While _Locorum_ is still in development, the SEO team at Nebo is currently using the app as intended. We are continually working to add new features, such as the ability to ignore some search results and persist results even in situations where there are none. In order to more effectively work with data on the client side, I am refactoring JavaScript to React with Redux. While standard JavaScript has served us well, we will need more effective state management in order to implement the more complex solutions.
+_Flatfoot_ provides users with an easy to way to proactively monitor social media accounts for troublesome content without sacrificing anyone's independence. While there is still room for improvement (add support for more social media outlets, tweak the algorithm, add push notification via email or text, etc.), this tool does achieve its main objectives. Additionally, I was able to learn more about a full suite of languages and frameworks, primarily React, Redux, Phoenix, Elixir, and Erlang. This capstone has been a huge learning point for me and I'm grateful I was able to spend so much time developing it.
