@@ -214,7 +214,17 @@ def handle_cast({:fetch_update, ward_id}, state) do
 end
 ```
 
-Step 3 begins on the next to last line: `Archer.fetch_data(configs)`. Archer is similar SpadeInspector in that it has an OTP system with a supervisor that supervises a server, but that supervisor also supervises a [Task.Supervisor](https://hexdocs.pm/elixir/Task.Supervisor.html) named `FidoSupervisor`. `Archer.Server` will tell `FidoSupervisor` to launch each backend according to the provided config (step 4). `FidoSupervisor` will then launch and supervise each backend concurrently (step 5). When each backend retrieves a result (in this case, we only have `Twitter` running), it will parse and send those results back to `SpadeInspector.Server` for processing (step 6).
+Step 3 begins on the next to last line: `Archer.fetch_data(configs)`. Archer is similar SpadeInspector in that it has an OTP system, but in addition to a server `ArcherSupervisor` is also also supervises a [Task.Supervisor](https://hexdocs.pm/elixir/Task.Supervisor.html) named `FidoSupervisor`.
+
+```elixir
+# Children initialized for ArcherSupervisor
+children = [
+  supervisor(Task.Supervisor, [[name: Flatfoot.Archer.FidoSupervisor]]),
+  worker(Flatfoot.Archer.Server, [ self() ])
+]
+```
+
+`Archer.Server` will tell `FidoSupervisor` to launch each backend according to the provided config (step 4). `FidoSupervisor` will then launch and supervise each backend concurrently (step 5). When each backend retrieves a result (in this case, we only have `Twitter` running), it will parse and send those results back to `SpadeInspector.Server` for processing (step 6).
 
 Upon receiving a result, `SpadeInspector.Server` will add each result, assign a rating, and then broadcast those results to `SpadeChannel` (step 7). `SpadeChannel` will then broadcast those result to our connected frontend (step 8.)
 
